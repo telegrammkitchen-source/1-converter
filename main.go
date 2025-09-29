@@ -13,13 +13,10 @@ func getUserInput() (float64, string, string) {
 
 	fmt.Print("Введите сумму для конвертации: ")
 	fmt.Scan(&amount)
-
 	fmt.Print("Введите исходную валюту (USD, EUR, RUB): ")
 	fmt.Scan(&fromCurrency)
-
 	fmt.Print("Введите целевую валюту (USD, EUR, RUB): ")
 	fmt.Scan(&toCurrency)
-
 	return amount, fromCurrency, toCurrency
 }
 
@@ -29,7 +26,7 @@ func calculateConversion(amount float64, fromCurrency, toCurrency string) float6
 }
 
 func main() {
-	// Выводим курсы валют
+
 	EURtoRUB := (1 / USDtoEUR) * USDtoRUB
 
 	fmt.Printf("Курсы конвертации:\n")
