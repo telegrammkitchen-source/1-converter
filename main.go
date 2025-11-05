@@ -5,31 +5,32 @@ import (
 	"strings"
 )
 
-const (
-	USDtoEUR = 0.93
-	USDtoRUB = 93.5
-)
+// Используем map для хранения курсов валют
+var exchangeRates = map[string]float64{
+	"USD_EUR": 0.93,
+	"USD_RUB": 93.5,
+	"EUR_USD": 1 / 0.93,
+	"EUR_RUB": 93.5 / 0.93,
+	"RUB_USD": 1 / 93.5,
+	"RUB_EUR": 0.93 / 93.5,
+}
 
 // Функция для ввода и проверки валюты
 func inputCurrency(prompt string) string {
 	var currency string
-	validCurrencies := []string{"USD", "EUR", "RUB"}
+	validCurrencies := map[string]bool{
+		"USD": true,
+		"EUR": true,
+		"RUB": true,
+	}
 
 	for {
 		fmt.Print(prompt)
 		fmt.Scan(&currency)
 		currency = strings.ToUpper(currency)
 
-		// Проверяем, что валюта допустима
-		isValid := false
-		for _, validCurrency := range validCurrencies {
-			if currency == validCurrency {
-				isValid = true
-				break
-			}
-		}
-
-		if isValid {
+		// Проверяем через map вместо цикла
+		if validCurrencies[currency] {
 			break
 		} else {
 			fmt.Println("Ошибка: допустимые валюты - USD, EUR, RUB")
@@ -77,46 +78,43 @@ func calculateConversion(amount float64, fromCurrency, toCurrency string) float6
 		return amount
 	}
 
-	// Конвертация через USD как базовую валюту
-	var amountInUSD float64
+	// Используем switch для определения пары валют
+	var rate float64
+	currencyPair := fromCurrency + "_" + toCurrency
 
-	// Конвертируем исходную валюту в USD
-	switch fromCurrency {
-	case "USD":
-		amountInUSD = amount
-	case "EUR":
-		amountInUSD = amount / USDtoEUR
-	case "RUB":
-		amountInUSD = amount / USDtoRUB
-	}
+	// Получаем курс из map
+	rate = exchangeRates[currencyPair]
 
-	// Конвертируем из USD в целевую валюту
-	var result float64
-	switch toCurrency {
-	case "USD":
-		result = amountInUSD
-	case "EUR":
-		result = amountInUSD * USDtoEUR
-	case "RUB":
-		result = amountInUSD * USDtoRUB
-	}
+	// Вычисляем результат
+	result := amount * rate
 
 	return result
 }
 
 func showExchangeRates() {
-	EURtoRUB := (1 / USDtoEUR) * USDtoRUB
-	EURtoUSD := 1 / USDtoEUR
-	RUBtoUSD := 1 / USDtoRUB
-	RUBtoEUR := 1 / EURtoRUB
-
 	fmt.Println("\nТЕКУЩИЕ КУРСЫ ВАЛЮТ:")
-	fmt.Printf("1 USD = %.2f EUR\n", USDtoEUR)
-	fmt.Printf("1 USD = %.2f RUB\n", USDtoRUB)
-	fmt.Printf("1 EUR = %.2f USD\n", EURtoUSD)
-	fmt.Printf("1 EUR = %.2f RUB\n", EURtoRUB)
-	fmt.Printf("1 RUB = %.6f USD\n", RUBtoUSD)
-	fmt.Printf("1 RUB = %.6f EUR\n", RUBtoEUR)
+
+	// Используем switch для красивого форматирования вывода
+	for pair, rate := range exchangeRates {
+		currencies := strings.Split(pair, "_")
+		from := currencies[0]
+		to := currencies[1]
+
+		switch {
+		case from == "USD" && to == "EUR":
+			fmt.Printf("1 USD = %.2f EUR\n", rate)
+		case from == "USD" && to == "RUB":
+			fmt.Printf("1 USD = %.2f RUB\n", rate)
+		case from == "EUR" && to == "USD":
+			fmt.Printf("1 EUR = %.2f USD\n", rate)
+		case from == "EUR" && to == "RUB":
+			fmt.Printf("1 EUR = %.2f RUB\n", rate)
+		case from == "RUB" && to == "USD":
+			fmt.Printf("1 RUB = %.6f USD\n", rate)
+		case from == "RUB" && to == "EUR":
+			fmt.Printf("1 RUB = %.6f EUR\n", rate)
+		}
+	}
 	fmt.Println()
 }
 
@@ -132,19 +130,42 @@ func main() {
 		// Выполняем расчет
 		result := calculateConversion(amount, fromCurrency, toCurrency)
 
-		// Выводим результат
+		// Выводим результат с использованием switch для форматирования
 		fmt.Printf("\nРЕЗУЛЬТАТ КОНВЕРТАЦИИ:\n")
-		fmt.Printf("%.2f %s = %.2f %s\n", amount, fromCurrency, result, toCurrency)
+
+		switch {
+		case fromCurrency == "USD" && toCurrency == "EUR":
+			fmt.Printf("%.2f USD = %.2f EUR\n", amount, result)
+		case fromCurrency == "USD" && toCurrency == "RUB":
+			fmt.Printf("%.2f USD = %.2f RUB\n", amount, result)
+		case fromCurrency == "EUR" && toCurrency == "USD":
+			fmt.Printf("%.2f EUR = %.2f USD\n", amount, result)
+		case fromCurrency == "EUR" && toCurrency == "RUB":
+			fmt.Printf("%.2f EUR = %.2f RUB\n", amount, result)
+		case fromCurrency == "RUB" && toCurrency == "USD":
+			fmt.Printf("%.2f RUB = %.2f USD\n", amount, result)
+		case fromCurrency == "RUB" && toCurrency == "EUR":
+			fmt.Printf("%.2f RUB = %.2f EUR\n", amount, result)
+		default:
+			fmt.Printf("%.2f %s = %.2f %s\n", amount, fromCurrency, result, toCurrency)
+		}
 
 		// Спрашиваем, хочет ли пользователь продолжить
 		var choice string
 		fmt.Print("\nХотите выполнить еще одну конвертацию? (y/n): ")
 		fmt.Scan(&choice)
 
-		if strings.ToLower(choice) != "y" {
+		// Используем switch для обработки выбора пользователя
+		switch strings.ToLower(choice) {
+		case "y", "yes", "да", "д":
+			fmt.Println()
+			continue
+		case "n", "no", "нет", "н":
 			fmt.Println("Спасибо за использование конвертера валют!")
-			break
+			return
+		default:
+			fmt.Println("Неизвестный выбор. Выход из программы.")
+			return
 		}
-		fmt.Println()
 	}
 }
